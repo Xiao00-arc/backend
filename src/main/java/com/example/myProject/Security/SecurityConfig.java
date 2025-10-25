@@ -48,7 +48,7 @@ public class SecurityConfig {
                 // Allow all OPTIONS requests (for CORS preflight)
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() 
                 // Allow our public endpoints
-                .requestMatchers("/api/authenticate", "/api/users/post", "/health", "/actuator/health", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                .requestMatchers("/api/authenticate", "/api/users/post", "/api/test", "/health", "/actuator/health", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 // -----------------------------
                 // All other requests must be authenticated
                 .anyRequest().authenticated()

@@ -19,4 +19,13 @@ public class HealthController {
         response.put("service", "Expense Tracker API");
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/api/test")
+    public ResponseEntity<Map<String, Object>> test() {
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Backend is working!");
+        response.put("timestamp", LocalDateTime.now());
+        response.put("cors", "CORS should be working");
+        return ResponseEntity.ok(response);
+    }
 }

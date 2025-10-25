@@ -22,7 +22,9 @@ public class CorsConfig {
         
         // Parse allowed origins from environment variable or use defaults
         List<String> origins = Arrays.asList(allowedOrigins.split(","));
-        configuration.setAllowedOrigins(origins);
+        
+        // Use allowedOriginPatterns instead of allowedOrigins when credentials are enabled
+        configuration.setAllowedOriginPatterns(origins);
         
         // Allow all HTTP methods
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));

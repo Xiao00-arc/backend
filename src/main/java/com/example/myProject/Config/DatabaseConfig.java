@@ -7,7 +7,6 @@ import org.springframework.context.annotation.Primary;
 
 import javax.sql.DataSource;
 import java.net.URI;
-import java.net.URISyntaxException;
 
 @Configuration
 public class DatabaseConfig {
@@ -22,9 +21,16 @@ public class DatabaseConfig {
                 // Parse the Render DATABASE_URL format: postgresql://user:password@host:port/database
                 URI uri = new URI(databaseUrl);
                 
-                String jdbcUrl = "jdbc:postgresql://" + uri.getHost() + ":" + uri.getPort() + uri.getPath();
-                String username = uri.getUserInfo().split(":")[0];
-                String password = uri.getUserInfo().split(":")[1];
+                String host = uri.getHost();
+                int port = uri.getPort() != -1 ? uri.getPort() : 5432; // Default PostgreSQL port
+                String database = uri.getPath().substring(1); // Remove leading slash
+                String[] userInfo = uri.getUserInfo().split(":");
+                String username = userInfo[0];
+                String password = userInfo[1];
+                
+                String jdbcUrl = "jdbc:postgresql://" + host + ":" + port + "/" + database;
+                
+                System.out.println("Connecting to: " + jdbcUrl + " with user: " + username);
                 
                 return DataSourceBuilder
                     .create()
@@ -34,7 +40,9 @@ public class DatabaseConfig {
                     .driverClassName("org.postgresql.Driver")
                     .build();
                     
-            } catch (URISyntaxException e) {
+            } catch (Exception e) {
+                System.err.println("Failed to parse DATABASE_URL: " + databaseUrl);
+                e.printStackTrace();
                 throw new RuntimeException("Invalid DATABASE_URL format", e);
             }
         }

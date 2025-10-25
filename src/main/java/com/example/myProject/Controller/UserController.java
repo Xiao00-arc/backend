@@ -21,9 +21,9 @@ public class UserController {
     @Autowired
     private UserServices userService;
 
-    // --- THIS ENDPOINT IS NOW SECURED AND USES THE DTO ---
+    // --- PUBLIC REGISTRATION ENDPOINT ---
     @PostMapping("/post")
-    @PreAuthorize("hasRole('ADMIN')") // Only an Admin can create new users
+    // No @PreAuthorize - allow public registration
     public com.example.myProject.Entity.User createUser(@Valid @RequestBody UserSignUpRequest signUpRequest) {
         return userService.createUser(signUpRequest);
     }

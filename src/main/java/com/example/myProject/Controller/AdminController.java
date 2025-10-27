@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.myProject.Entity.User;
 import com.example.myProject.Repository.UserRepository;
+import com.example.myProject.Repository.ExpenseRepository;
+import com.example.myProject.Repository.ApprovalRepository;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -21,6 +23,12 @@ public class AdminController {
 
     @Autowired
     private UserRepository userRepository;
+    
+    @Autowired
+    private ExpenseRepository expenseRepository;
+    
+    @Autowired
+    private ApprovalRepository approvalRepository;
 
     @PostMapping("/assign-managers")
     @PreAuthorize("hasRole('ADMIN')")
@@ -106,6 +114,87 @@ public class AdminController {
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+    
+    @PostMapping("/create-missing-approvals")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> createMissingApprovals() {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            // Get all expenses
+            List<com.example.myProject.Entity.Expense> allExpenses = 
+                new java.util.ArrayList<>(expenseRepository.findAll());
+            
+            // Get all existing approval expense IDs
+            List<com.example.myProject.Entity.Approval> allApprovals = approvalRepository.findAll();
+            java.util.Set<Long> approvedExpenseIds = new java.util.HashSet<>();
+            for (com.example.myProject.Entity.Approval approval : allApprovals) {
+                approvedExpenseIds.add(approval.getExpenseId());
+            }
+            
+            int createdCount = 0;
+            java.util.List<String> createdApprovals = new java.util.ArrayList<>();
+            
+            // Find the default manager
+            User defaultManager = userRepository.findByUsername("manager").orElse(null);
+            if (defaultManager == null) {
+                List<User> managers = userRepository.findByRole("MANAGER");
+                if (!managers.isEmpty()) {
+                    defaultManager = managers.get(0);
+                }
+            }
+            
+            if (defaultManager == null) {
+                response.put("success", false);
+                response.put("message", "No manager found in the system");
+                return ResponseEntity.badRequest().body(response);
+            }
+            
+            // Create approval records for expenses that don't have them
+            for (com.example.myProject.Entity.Expense expense : allExpenses) {
+                if (!approvedExpenseIds.contains(expense.getId())) {
+                    // This expense doesn't have an approval record, create one
+                    com.example.myProject.Entity.Approval newApproval = new com.example.myProject.Entity.Approval();
+                    newApproval.setExpenseId(expense.getId());
+                    newApproval.setApproverId(defaultManager.getId());
+                    newApproval.setApprovalStatus("PENDING");
+                    
+                    approvalRepository.save(newApproval);
+                    createdCount++;
+                    
+                    String info = String.format("Expense ID: %d, Amount: $%.2f, Description: %s", 
+                        expense.getId(), expense.getAmount(), expense.getDescription());
+                    createdApprovals.add(info);
+                    
+                    System.out.println("✅ Created approval for expense " + expense.getId());
+                }
+            }
+            
+            response.put("success", true);
+            response.put("message", "Created " + createdCount + " approval records");
+            response.put("totalExpenses", allExpenses.size());
+            response.put("existingApprovals", allApprovals.size());
+            response.put("createdApprovals", createdCount);
+            response.put("details", createdApprovals);
+            response.put("managerId", defaultManager.getId());
+            response.put("managerUsername", defaultManager.getUsername());
+            
+            System.out.println("========================================");
+            System.out.println("✅ Missing Approvals Created");
+            System.out.println("   Total Expenses: " + allExpenses.size());
+            System.out.println("   Existing Approvals: " + allApprovals.size());
+            System.out.println("   Created Approvals: " + createdCount);
+            System.out.println("========================================");
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            e.printStackTrace();
             response.put("success", false);
             response.put("message", "Error: " + e.getMessage());
             return ResponseEntity.internalServerError().body(response);

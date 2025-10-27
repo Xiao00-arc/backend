@@ -7,6 +7,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -67,6 +68,40 @@ public class AdminController {
             System.out.println("   Manager: " + defaultManager.getUsername() + " (ID: " + defaultManager.getId() + ")");
             System.out.println("   Employees Updated: " + updatedCount);
             System.out.println("========================================");
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+    
+    @GetMapping("/check-employees")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> checkEmployees() {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            List<User> allUsers = userRepository.findAll();
+            List<Map<String, Object>> userList = new java.util.ArrayList<>();
+            
+            for (User user : allUsers) {
+                Map<String, Object> userInfo = new HashMap<>();
+                userInfo.put("id", user.getId());
+                userInfo.put("username", user.getUsername());
+                userInfo.put("email", user.getEmail());
+                userInfo.put("role", user.getRole());
+                userInfo.put("employeeId", user.getEmployeeId());
+                userInfo.put("managerId", user.getManagerId());
+                userInfo.put("hasManager", user.getManagerId() != null);
+                userList.add(userInfo);
+            }
+            
+            response.put("success", true);
+            response.put("totalUsers", allUsers.size());
+            response.put("users", userList);
             
             return ResponseEntity.ok(response);
             

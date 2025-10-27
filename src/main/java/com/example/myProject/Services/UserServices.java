@@ -38,6 +38,23 @@ public class UserServices {
         // Save the complete User entity to the database
         return userRepository.save(newUser);
     }
+    
+    // --- CREATE USER WITH SPECIFIC ROLE (for admins only) ---
+    public User createUserWithRole(UserSignUpRequest signUpRequest, String role) {
+        User newUser = new User();
+        newUser.setUsername(signUpRequest.getUsername());
+        newUser.setEmail(signUpRequest.getEmail());
+        newUser.setPassword(passwordEncoder.encode(signUpRequest.getPassword()));
+        
+        // Set the specified role (ADMIN, MANAGER, EMPLOYEE)
+        newUser.setRole(role.toUpperCase());
+        newUser.setEmployeeId("EMP-" + System.currentTimeMillis());
+        
+        newUser.setDepartmentId(null);
+        newUser.setManagerId(null);
+        
+        return userRepository.save(newUser);
+    }
     // ------------------------------------
 
     // ... (Your other methods like getAllUsers, updateUser, etc., remain the same) ...

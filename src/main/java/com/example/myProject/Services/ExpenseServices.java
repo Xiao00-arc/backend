@@ -3,6 +3,7 @@ package com.example.myProject.Services;
 import java.math.BigDecimal;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,6 +28,9 @@ public class ExpenseServices {
     @Autowired
     private EmailServices emailService;
 
+    @Value("${app.admin.email:admin@yourcompany.com}")
+    private String adminEmail;
+
     public Page<Expense> getMyExpenses(Pageable pageable) {
         String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
         User currentUser = userRepository.findByUsername(currentUsername)
@@ -48,13 +52,36 @@ public class ExpenseServices {
         // First, save the new expense to the database so it gets an ID
         Expense savedExpense = expenseRepository.save(newExpense);
 
+        // Get the employee who created the expense
+        User employee = userRepository.findById(savedExpense.getEmployeeId())
+                .orElse(null);
+
+        // Send email notification to admin about new expense
+        if (employee != null) {
+            String subject = "New Expense Submitted - " + savedExpense.getDescription();
+            String text = String.format(
+                "A new expense has been submitted:\n\n" +
+                "Submitted by: %s (%s)\n" +
+                "Description: %s\n" +
+                "Amount: $%.2f\n" +
+                "Date: %s\n" +
+                "Status: %s\n\n" +
+                "Please review this expense in the system.",
+                employee.getUsername(),
+                employee.getEmail(),
+                savedExpense.getDescription(),
+                savedExpense.getAmount(),
+                savedExpense.getExpenseDate(),
+                savedExpense.getStatus()
+            );
+            // Send to admin email (configured in application.properties)
+            emailService.sendSimpleMessage(adminEmail, subject, text);
+        }
+
         // Now, run the existing approval workflow logic
         BigDecimal managerApprovalThreshold = new BigDecimal("100.00");
         if (savedExpense.getAmount().compareTo(managerApprovalThreshold) >= 0) {
-            Optional<User> employeeOptional = userRepository.findById(savedExpense.getEmployeeId());
-
-            if (employeeOptional.isPresent() && employeeOptional.get().getManagerId() != null) {
-                User employee = employeeOptional.get();
+            if (employee != null && employee.getManagerId() != null) {
                 Long managerId = employee.getManagerId();
                 User manager = userRepository.findById(managerId).orElse(null);
 

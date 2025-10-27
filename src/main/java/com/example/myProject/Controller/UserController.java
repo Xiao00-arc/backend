@@ -23,9 +23,16 @@ public class UserController {
 
     // --- PUBLIC REGISTRATION ENDPOINT ---
     @PostMapping("/post")
-    // No @PreAuthorize - allow public registration
+    // No @PreAuthorize - allow public registration (creates EMPLOYEE by default)
     public com.example.myProject.Entity.User createUser(@Valid @RequestBody UserSignUpRequest signUpRequest) {
         return userService.createUser(signUpRequest);
+    }
+    
+    // --- ADMIN CREATION ENDPOINT (Protected) ---
+    @PostMapping("/create-admin")
+    @PreAuthorize("hasRole('ADMIN')") // Only existing admins can create new admins
+    public com.example.myProject.Entity.User createAdminUser(@Valid @RequestBody UserSignUpRequest signUpRequest, @RequestParam String role) {
+        return userService.createUserWithRole(signUpRequest, role);
     }
     // ---------------------------------------------------
 

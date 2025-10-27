@@ -40,6 +40,12 @@ public class ExpenseServices {
 
     // --- THIS IS THE UPDATED METHOD ---
     public Expense createExpense(ExpenseCreateRequest expenseRequest) {
+        System.out.println("========================================");
+        System.out.println("[ExpenseServices] ⚡ CREATE EXPENSE START");
+        System.out.println("[ExpenseServices] Employee ID: " + expenseRequest.getEmployeeId());
+        System.out.println("[ExpenseServices] Amount: $" + expenseRequest.getAmount());
+        System.out.println("[ExpenseServices] Description: " + expenseRequest.getDescription());
+        
         // Create a new, full Expense entity from the simple request DTO
         Expense newExpense = new Expense();
         newExpense.setEmployeeId(expenseRequest.getEmployeeId());
@@ -51,10 +57,21 @@ public class ExpenseServices {
 
         // First, save the new expense to the database so it gets an ID
         Expense savedExpense = expenseRepository.save(newExpense);
+        System.out.println("[ExpenseServices] ✅ Expense saved with ID: " + savedExpense.getId());
 
         // Get the employee who created the expense
         User employee = userRepository.findById(savedExpense.getEmployeeId())
                 .orElse(null);
+                
+        if (employee == null) {
+            System.err.println("[ExpenseServices] ❌ ERROR: Employee not found with ID: " + savedExpense.getEmployeeId());
+        } else {
+            System.out.println("[ExpenseServices] ✅ Employee found:");
+            System.out.println("  - ID: " + employee.getId());
+            System.out.println("  - Username: " + employee.getUsername());
+            System.out.println("  - Role: " + employee.getRole());
+            System.out.println("  - Manager ID: " + employee.getManagerId());
+        }
 
         // Send email notification to admin about new expense
         if (employee != null) {
@@ -86,17 +103,32 @@ public class ExpenseServices {
         }
 
         // Now, run the existing approval workflow logic
-        // Create approval record for ALL expenses (not just $100+)
+        // Create approval record for ALL expenses (if employee has a manager)
+        System.out.println("[ExpenseServices] 📋 Checking approval workflow...");
+        
         if (employee != null && employee.getManagerId() != null) {
+            System.out.println("[ExpenseServices] ✅ Employee has manager, creating approval record...");
+            
             Long managerId = employee.getManagerId();
             User manager = userRepository.findById(managerId).orElse(null);
 
             if (manager != null) {
+                System.out.println("[ExpenseServices] ✅ Manager found:");
+                System.out.println("  - Manager ID: " + manager.getId());
+                System.out.println("  - Manager Username: " + manager.getUsername());
+                System.out.println("  - Manager Email: " + manager.getEmail());
+                
                 Approval newApproval = new Approval();
                 newApproval.setExpenseId(savedExpense.getId());
                 newApproval.setApproverId(managerId);
                 newApproval.setApprovalStatus("PENDING");
-                approvalService.createApproval(newApproval);
+                
+                Approval savedApproval = approvalService.createApproval(newApproval);
+                System.out.println("[ExpenseServices] ✅ Approval record created!");
+                System.out.println("  - Approval ID: " + savedApproval.getId());
+                System.out.println("  - Expense ID: " + savedApproval.getExpenseId());
+                System.out.println("  - Approver ID: " + savedApproval.getApproverId());
+                System.out.println("  - Status: " + savedApproval.getApprovalStatus());
 
                 // Only send email for expenses >= $100
                 BigDecimal managerApprovalThreshold = new BigDecimal("100.00");
@@ -108,8 +140,22 @@ public class ExpenseServices {
                     );
                     emailService.sendSimpleMessage(manager.getEmail(), subject, text);
                 }
+            } else {
+                System.err.println("[ExpenseServices] ❌ ERROR: Manager not found with ID: " + managerId);
+            }
+        } else {
+            if (employee == null) {
+                System.err.println("[ExpenseServices] ⚠️  WARNING: Employee is null, cannot create approval");
+            } else if (employee.getManagerId() == null) {
+                System.err.println("[ExpenseServices] ⚠️  WARNING: Employee has no manager assigned!");
+                System.err.println("  - Employee ID: " + employee.getId());
+                System.err.println("  - Employee Username: " + employee.getUsername());
+                System.err.println("  - NO APPROVAL RECORD WILL BE CREATED!");
             }
         }
+        
+        System.out.println("[ExpenseServices] ✅ CREATE EXPENSE COMPLETE");
+        System.out.println("========================================");
         return savedExpense;
     }
     // ------------------------------------

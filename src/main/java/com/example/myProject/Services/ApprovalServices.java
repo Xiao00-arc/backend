@@ -39,17 +39,35 @@ public class ApprovalServices {
     private EmailServices emailService; // <-- 1. INJECT EmailServices
 
     public Approval processApprovalAction(Long approvalId, ApprovalActionRequest actionRequest) {
+        System.out.println("========================================");
+        System.out.println("[ApprovalServices] ⚡ START APPROVAL PROCESS");
+        System.out.println("[ApprovalServices] Input - Approval ID: " + approvalId);
+        System.out.println("[ApprovalServices] Input - Action: " + actionRequest.getStatus());
+        
         Approval approval = approvalRepository.findById(approvalId)
-                .orElseThrow(() -> new RuntimeException("Approval not found with id: " + approvalId));
+                .orElseThrow(() -> {
+                    System.err.println("[ApprovalServices] ❌ ERROR: Approval not found with id: " + approvalId);
+                    return new RuntimeException("Approval not found with id: " + approvalId);
+                });
+        
+        System.out.println("[ApprovalServices] ✅ Approval found - Expense ID: " + approval.getExpenseId());
+        System.out.println("[ApprovalServices] Approval Status: " + approval.getApprovalStatus());
+        System.out.println("[ApprovalServices] Assigned Approver ID: " + approval.getApproverId());
 
         String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
-        User currentUser = userRepository.findByUsername(currentUsername).orElseThrow();
+        System.out.println("[ApprovalServices] Current authenticated user: " + currentUsername);
         
-        System.out.println("[ApprovalServices] Processing approval action:");
-        System.out.println("[ApprovalServices] Current user: " + currentUsername + " (ID: " + currentUser.getId() + ")");
-        System.out.println("[ApprovalServices] Current user role: " + currentUser.getRole());
-        System.out.println("[ApprovalServices] Approval ID: " + approvalId);
-        System.out.println("[ApprovalServices] Assigned approver ID: " + approval.getApproverId());
+        User currentUser = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> {
+                    System.err.println("[ApprovalServices] ❌ ERROR: User not found: " + currentUsername);
+                    return new RuntimeException("User not found: " + currentUsername);
+                });
+        
+        System.out.println("[ApprovalServices] ✅ User found:");
+        System.out.println("  - User ID: " + currentUser.getId());
+        System.out.println("  - Username: " + currentUser.getUsername());
+        System.out.println("  - Role: " + currentUser.getRole());
+        System.out.println("  - Email: " + currentUser.getEmail());
         
         // Enhanced authorization logic: Allow admins, managers, and finance managers to approve any expense
         // Or allow the specifically assigned approver to approve

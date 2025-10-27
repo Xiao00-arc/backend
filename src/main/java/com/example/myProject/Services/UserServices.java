@@ -31,9 +31,24 @@ public class UserServices {
         newUser.setRole("EMPLOYEE"); // All new signups are Employees by default
         newUser.setEmployeeId("EMP-" + System.currentTimeMillis()); // Generate a simple, unique employee ID
         
-        // These can be set later by an admin
+        // Automatically assign default manager to new employees
+        User defaultManager = userRepository.findByUsername("manager").orElse(null);
+        if (defaultManager != null) {
+            newUser.setManagerId(defaultManager.getId());
+            System.out.println("✅ Assigned default manager (ID: " + defaultManager.getId() + ") to new employee: " + newUser.getUsername());
+        } else {
+            // If no default manager exists, try to find any user with MANAGER role
+            List<User> managers = userRepository.findByRole("MANAGER");
+            if (!managers.isEmpty()) {
+                newUser.setManagerId(managers.get(0).getId());
+                System.out.println("✅ Assigned manager (ID: " + managers.get(0).getId() + ") to new employee: " + newUser.getUsername());
+            } else {
+                newUser.setManagerId(null);
+                System.out.println("⚠️  No manager found - new employee has no manager assigned");
+            }
+        }
+        
         newUser.setDepartmentId(null);
-        newUser.setManagerId(null);
 
         // Save the complete User entity to the database
         return userRepository.save(newUser);

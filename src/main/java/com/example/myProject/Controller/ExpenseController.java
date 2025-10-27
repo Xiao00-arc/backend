@@ -35,9 +35,9 @@ public Expense createExpense(@Valid @RequestBody ExpenseCreateRequest expenseReq
     return expenseService.createExpense(expenseRequest);
 }
 
-    // Endpoint for admins to see ALL expenses
+    // Endpoint for admins/managers to see ALL expenses
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('FINANCE_MANAGER')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER') or hasRole('FINANCE_MANAGER')")
     public Page<com.example.myProject.Entity.Expense> getAllExpenses(Pageable pageable) {
         return expenseService.getAllExpenses(pageable);
     }

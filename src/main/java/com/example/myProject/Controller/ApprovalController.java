@@ -65,7 +65,7 @@ public class ApprovalController {
 
     // ... (Your other endpoints remain mostly the same) ...
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'FINANCE_MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'FINANCE_MANAGER')")
     public Page<com.example.myProject.Entity.Approval> getAllApprovals(Pageable pageable) {
         return approvalService.getAllApprovals(pageable);
     }

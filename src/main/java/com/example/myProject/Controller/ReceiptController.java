@@ -64,7 +64,7 @@ public class ReceiptController {
     // ------------------------------------
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'FINANCE_MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'FINANCE_MANAGER')")
     public Page<com.example.myProject.Entity.Receipt> getAllReceipts(Pageable pageable) {
         return receiptService.getAllReceipts(pageable);
     }

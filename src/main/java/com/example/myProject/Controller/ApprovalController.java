@@ -83,4 +83,12 @@ public class ApprovalController {
     public String deleteApproval(@PathVariable Long id) {
         return approvalService.deleteApproval(id);
     }
+
+    // Get approvals for a specific expense
+    @GetMapping("/expense/{expenseId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<Approval>> getApprovalsByExpenseId(@PathVariable Long expenseId) {
+        List<Approval> approvals = approvalService.getApprovalsByExpenseId(expenseId);
+        return ResponseEntity.ok(approvals);
+    }
 }

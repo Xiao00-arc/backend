@@ -87,28 +87,40 @@ public class ApprovalServices {
         if ("REJECTED".equalsIgnoreCase(actionRequest.getStatus())) {
             expense.setStatus("REJECTED");
             finalStatus = "REJECTED";
+            System.out.println("[ApprovalServices] Expense marked as REJECTED");
         } else if ("APPROVED".equalsIgnoreCase(actionRequest.getStatus())) {
             boolean isFinalApproval = determineNextStep(expense, currentUser);
             if (isFinalApproval) {
                 expense.setStatus("APPROVED");
                 finalStatus = "APPROVED";
+                System.out.println("[ApprovalServices] Expense marked as APPROVED (final)");
+            } else {
+                expense.setStatus("PENDING");
+                System.out.println("[ApprovalServices] Expense escalated, status remains PENDING");
             }
         }
         
         expenseRepository.save(expense);
+        System.out.println("[ApprovalServices] Expense saved with status: " + expense.getStatus());
         
         // --- 2. SEND EMAIL NOTIFICATION TO THE EMPLOYEE IF THE PROCESS IS FINISHED ---
         if (finalStatus != null) {
-            String subject = "Update on your Expense Claim #" + expense.getId();
-            String text = String.format(
-                "Hello %s,\n\nYour expense claim for $%s ('%s') has been %s.\n\nApprover comments: %s",
-                employee.getUsername(),
-                expense.getAmount(),
-                expense.getDescription(),
-                finalStatus.toLowerCase(),
-                actionRequest.getComments() != null ? actionRequest.getComments() : "N/A"
-            );
-            emailService.sendSimpleMessage(employee.getEmail(), subject, text);
+            try {
+                String subject = "Update on your Expense Claim #" + expense.getId();
+                String text = String.format(
+                    "Hello %s,\n\nYour expense claim for $%s ('%s') has been %s.\n\nApprover comments: %s",
+                    employee.getUsername(),
+                    expense.getAmount(),
+                    expense.getDescription(),
+                    finalStatus.toLowerCase(),
+                    actionRequest.getComments() != null ? actionRequest.getComments() : "N/A"
+                );
+                emailService.sendSimpleMessage(employee.getEmail(), subject, text);
+                System.out.println("✅ Email notification sent to employee: " + employee.getEmail());
+            } catch (Exception e) {
+                System.err.println("❌ Failed to send email to employee: " + e.getMessage());
+                e.printStackTrace();
+            }
         }
         // -------------------------------------------------------------------------
 
@@ -194,6 +206,11 @@ public class ApprovalServices {
     public Approval createApproval(Approval approval) { return approvalRepository.save(approval); }
     public Page<Approval> getAllApprovals(Pageable pageable) { return approvalRepository.findAll(pageable); }
     public Optional<Approval> getApprovalById(Long id) { return approvalRepository.findById(id); }
+    
+    public List<Approval> getApprovalsByExpenseId(Long expenseId) {
+        return approvalRepository.findByExpenseId(expenseId);
+    }
+    
     public String deleteApproval(Long id) {
         if (approvalRepository.existsById(id)) {
             approvalRepository.deleteById(id);

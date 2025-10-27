@@ -58,24 +58,31 @@ public class ExpenseServices {
 
         // Send email notification to admin about new expense
         if (employee != null) {
-            String subject = "New Expense Submitted - " + savedExpense.getDescription();
-            String text = String.format(
-                "A new expense has been submitted:\n\n" +
-                "Submitted by: %s (%s)\n" +
-                "Description: %s\n" +
-                "Amount: $%.2f\n" +
-                "Date: %s\n" +
-                "Status: %s\n\n" +
-                "Please review this expense in the system.",
-                employee.getUsername(),
-                employee.getEmail(),
-                savedExpense.getDescription(),
-                savedExpense.getAmount(),
-                savedExpense.getExpenseDate(),
-                savedExpense.getStatus()
-            );
-            // Send to admin email (configured in application.properties)
-            emailService.sendSimpleMessage(adminEmail, subject, text);
+            try {
+                String subject = "New Expense Submitted - " + savedExpense.getDescription();
+                String text = String.format(
+                    "A new expense has been submitted:\n\n" +
+                    "Submitted by: %s (%s)\n" +
+                    "Description: %s\n" +
+                    "Amount: $%.2f\n" +
+                    "Date: %s\n" +
+                    "Status: %s\n\n" +
+                    "Please review this expense in the system.",
+                    employee.getUsername(),
+                    employee.getEmail(),
+                    savedExpense.getDescription(),
+                    savedExpense.getAmount(),
+                    savedExpense.getExpenseDate(),
+                    savedExpense.getStatus()
+                );
+                // Send to admin email (configured in application.properties)
+                emailService.sendSimpleMessage(adminEmail, subject, text);
+                System.out.println("✅ Email notification sent to admin: " + adminEmail);
+            } catch (Exception e) {
+                System.err.println("❌ Failed to send email notification: " + e.getMessage());
+                e.printStackTrace();
+                // Don't fail the expense creation if email fails
+            }
         }
 
         // Now, run the existing approval workflow logic

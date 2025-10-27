@@ -86,19 +86,21 @@ public class ExpenseServices {
         }
 
         // Now, run the existing approval workflow logic
-        BigDecimal managerApprovalThreshold = new BigDecimal("100.00");
-        if (savedExpense.getAmount().compareTo(managerApprovalThreshold) >= 0) {
-            if (employee != null && employee.getManagerId() != null) {
-                Long managerId = employee.getManagerId();
-                User manager = userRepository.findById(managerId).orElse(null);
+        // Create approval record for ALL expenses (not just $100+)
+        if (employee != null && employee.getManagerId() != null) {
+            Long managerId = employee.getManagerId();
+            User manager = userRepository.findById(managerId).orElse(null);
 
-                if (manager != null) {
-                    Approval newApproval = new Approval();
-                    newApproval.setExpenseId(savedExpense.getId());
-                    newApproval.setApproverId(managerId);
-                    newApproval.setApprovalStatus("PENDING");
-                    approvalService.createApproval(newApproval);
+            if (manager != null) {
+                Approval newApproval = new Approval();
+                newApproval.setExpenseId(savedExpense.getId());
+                newApproval.setApproverId(managerId);
+                newApproval.setApprovalStatus("PENDING");
+                approvalService.createApproval(newApproval);
 
+                // Only send email for expenses >= $100
+                BigDecimal managerApprovalThreshold = new BigDecimal("100.00");
+                if (savedExpense.getAmount().compareTo(managerApprovalThreshold) >= 0) {
                     String subject = "New Expense Approval Request";
                     String text = String.format(
                         "Hello %s,\n\nA new expense claim for $%s submitted by %s is awaiting your approval.\n\nDescription: %s\n\nPlease log in to the system to review it.",
